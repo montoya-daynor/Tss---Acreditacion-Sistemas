@@ -117,10 +117,22 @@ public class MainLayout extends AppLayout implements RouterLayout {
             "📊  Dashboard", DashboardView.class);
         estilizarItem(dashboard);
 
-        nav.addItem(encuestaTitulados, encuestaEmpleadores, dashboard);
+        SideNavItem perfilEmpleabilidad = new SideNavItem(
+            "💼  Perfil y Empleabilidad", PerfilEmpleabilidadView.class);
+        estilizarItem(perfilEmpleabilidad);
+
+        SideNavItem demandaPosgrado = new SideNavItem(
+            "🎓  Demanda de Posgrado", DemandaPosgradoView.class);
+        estilizarItem(demandaPosgrado);
+
+        SideNavItem financiamientoBecas = new SideNavItem(
+            "💰  Financiamiento y Becas", FinanciamientoBecasView.class);
+        estilizarItem(financiamientoBecas);
+
+        nav.addItem(encuestaTitulados, encuestaEmpleadores, dashboard, perfilEmpleabilidad, demandaPosgrado, financiamientoBecas);
 
         VerticalLayout navContainer = new VerticalLayout(lblEncuestas, encuestaTitulados,
-                encuestaEmpleadores, lblAnalisis, dashboard);
+                encuestaEmpleadores, lblAnalisis, dashboard, perfilEmpleabilidad, demandaPosgrado, financiamientoBecas);
         navContainer.setPadding(false);
         navContainer.setSpacing(false);
         navContainer.getStyle().set("padding", "0.5rem 0");

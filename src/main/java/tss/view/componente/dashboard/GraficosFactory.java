@@ -1,6 +1,7 @@
 package tss.view.componente.dashboard;
 
 import tss.entity.RespuestaTitulado;
+import tss.service.MetricaEstadistica;
 import tss.service.ReporteService;
 import tss.view.EChartsComponent;
 
@@ -38,6 +39,42 @@ public class GraficosFactory {
                 "label": { "show": true, "position": "right" } }]
             }
             """.formatted(titulo, cats, vals);
+
+        EChartsComponent chart = new EChartsComponent();
+        chart.setOptions(json);
+        return chart;
+    }
+
+    // GRÁFICO DE TORTA / DONA PARA UNA VARIABLE CATEGÓRICA
+    public EChartsComponent torta(List<RespuestaTitulado> datos,
+            Function<RespuestaTitulado, String> extractor, String titulo) {
+        Map<String, Long> freq = reporteService.frecuenciaPor(datos, extractor);
+        StringBuilder data = new StringBuilder();
+        for (Map.Entry<String, Long> entry : freq.entrySet()) {
+            if (data.length() > 0) data.append(",");
+            data.append(String.format("{\"value\": %d, \"name\": \"%s\"}",
+                    entry.getValue(), entry.getKey().replace("\"", "\\\"")));
+        }
+
+        String json = """
+            {
+              "tooltip": { "trigger": "item", "formatter": "{b}: {c} ({d}%%)" },
+              "legend": { "orient": "horizontal", "bottom": "0%%", "left": "center" },
+              "series": [
+                {
+                  "name": "%s",
+                  "type": "pie",
+                  "radius": ["35%%", "65%%"],
+                  "center": ["50%%", "45%%"],
+                  "avoidLabelOverlap": true,
+                  "itemStyle": { "borderRadius": 6, "borderColor": "#fff", "borderWidth": 2 },
+                  "label": { "show": true, "formatter": "{b}: {d}%%" },
+                  "emphasis": { "label": { "show": true, "fontSize": 13, "fontWeight": "bold" } },
+                  "data": [%s]
+                }
+              ]
+            }
+            """.formatted(titulo, data.toString());
 
         EChartsComponent chart = new EChartsComponent();
         chart.setOptions(json);
@@ -116,6 +153,63 @@ public class GraficosFactory {
                 "emphasis": { "itemStyle": { "shadowBlur": 10 } } }]
             }
             """.formatted(xCats, yCats, puntos);
+
+        EChartsComponent chart = new EChartsComponent();
+        chart.setOptions(json);
+        return chart;
+    }
+
+    // GRÁFICO COMPARATIVO DE MÉTRICAS ESTADÍSTICAS: MEDIA VS MEDIANA Y DESVIACIÓN
+    public EChartsComponent metricasEstadisticas(List<MetricaEstadistica> metricas) {
+        String categorias = metricas.stream()
+                .map(m -> "\"" + m.variable().replace("\"", "\\\"") + "\"")
+                .collect(Collectors.joining(","));
+        String medias = metricas.stream()
+                .map(m -> String.valueOf(m.media()))
+                .collect(Collectors.joining(","));
+        String medianas = metricas.stream()
+                .map(m -> String.valueOf(m.mediana()))
+                .collect(Collectors.joining(","));
+        String desviaciones = metricas.stream()
+                .map(m -> String.valueOf(m.desviacionEstandar()))
+                .collect(Collectors.joining(","));
+
+        String json = """
+            {
+              "tooltip": { "trigger": "axis" },
+              "legend": { "data": ["Media (x̄)", "Mediana (Me)", "Desv. Estándar (s)"] },
+              "grid": { "bottom": "20%%" },
+              "xAxis": {
+                "type": "category",
+                "data": [%s],
+                "axisLabel": { "interval": 0, "rotate": 15 }
+              },
+              "yAxis": { "type": "value" },
+              "series": [
+                {
+                  "name": "Media (x̄)",
+                  "type": "bar",
+                  "data": [%s],
+                  "itemStyle": { "color": "#003366" },
+                  "label": { "show": true, "position": "top" }
+                },
+                {
+                  "name": "Mediana (Me)",
+                  "type": "bar",
+                  "data": [%s],
+                  "itemStyle": { "color": "#007acc" },
+                  "label": { "show": true, "position": "top" }
+                },
+                {
+                  "name": "Desv. Estándar (s)",
+                  "type": "line",
+                  "data": [%s],
+                  "itemStyle": { "color": "#d97706" },
+                  "label": { "show": true, "position": "top" }
+                }
+              ]
+            }
+            """.formatted(categorias, medias, medianas, desviaciones);
 
         EChartsComponent chart = new EChartsComponent();
         chart.setOptions(json);
