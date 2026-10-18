@@ -117,38 +117,43 @@ CREATE DATABASE tss_db;
 
 ## 💻 Ejecución del Sistema
 
-### Opción 1: Mediante script rápido (Windows)
+### Opción 1: Mediante script automático (Recomendado)
 
-El proyecto incluye un script listo para ejecutar en Windows (`run.cmd`).
+El proyecto incluye scripts configurados con las variables de base de datos listas para iniciar:
 
-1. Abra una terminal (PowerShell o CMD) o haga doble clic sobre `run.cmd`.
-2. Si desea ajustar las credenciales de la base de datos o la ruta de su JDK, edite el archivo `run.cmd`:
-   ```cmd
-   @echo off
-   if exist "C:\Program Files\Java\jdk-21.0.12" (
-       set "JAVA_HOME=C:\Program Files\Java\jdk-21.0.12"
-       set "PATH=C:\Program Files\Java\jdk-21.0.12\bin;%PATH%"
-   )
-   set DB_URL=jdbc:postgresql://<HOST>:<PUERTO>/<DATABASE>?sslmode=require
-   set DB_USERNAME=<USUARIO>
-   set DB_PASSWORD=<PASSWORD>
-   .\mvnw.cmd spring-boot:run
-   ```
+- **En Git Bash (Terminal Bash en Windows / Linux / Mac):**
+  ```bash
+  ./run.sh
+  ```
+- **En Windows CMD / PowerShell o haciendo doble clic:**
+  ```cmd
+  run.cmd
+  ```
+
+---
 
 ### Opción 2: Mediante Maven Wrapper (Línea de Comandos)
 
-#### En Windows (PowerShell):
+#### En Git Bash (Windows):
+```bash
+export DB_URL="jdbc:postgresql://ep-royal-bread-b6nzwcdw-pooler.c-2.sa-east-1.aws.neon.tech/neondb?sslmode=require"
+export DB_USERNAME="neondb_owner"
+export DB_PASSWORD="tu_password"
+./mvnw spring-boot:run
+```
+
+#### En Windows PowerShell:
 ```powershell
-$env:DB_URL="jdbc:postgresql://localhost:5432/tss_db"
-$env:DB_USERNAME="postgres"
+$env:DB_URL="jdbc:postgresql://ep-royal-bread-b6nzwcdw-pooler.c-2.sa-east-1.aws.neon.tech/neondb?sslmode=require"
+$env:DB_USERNAME="neondb_owner"
 $env:DB_PASSWORD="tu_password"
 .\mvnw.cmd spring-boot:run
 ```
 
-#### En Windows (CMD):
+#### En Windows CMD (Símbolo del sistema):
 ```cmd
-set DB_URL=jdbc:postgresql://localhost:5432/tss_db
-set DB_USERNAME=postgres
+set DB_URL=jdbc:postgresql://ep-royal-bread-b6nzwcdw-pooler.c-2.sa-east-1.aws.neon.tech/neondb?sslmode=require
+set DB_USERNAME=neondb_owner
 set DB_PASSWORD=tu_password
 mvnw.cmd spring-boot:run
 ```

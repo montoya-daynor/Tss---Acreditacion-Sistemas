@@ -6,7 +6,7 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import java.util.List;
 import java.util.Map;
 
-// BLOQUE DE SEGMENTACIÓN, INSERCIÓN Y FRECUENCIAS CON COLORES Y EMOJIS — HU1
+// BLOQUE DE SEGMENTACIÓN, INSERCIÓN Y FRECUENCIAS — ESTILO NEUTRO INSTITUCIONAL
 public class PanelInsercionLaboral extends VerticalLayout {
 
     public PanelInsercionLaboral(
@@ -22,13 +22,15 @@ public class PanelInsercionLaboral extends VerticalLayout {
         setWidthFull();
 
         // ── A: SEGMENTACIÓN POR MADUREZ PROFESIONAL ──────────────────────────────
-        add(seccionTitulo("📊 Segmentación por Madurez Profesional"));
+        add(seccionTitulo("Segmentación por Madurez Profesional"));
 
         Div gridMadurez = new Div();
         gridMadurez.getStyle()
                 .set("display", "grid")
                 .set("grid-template-columns", "repeat(auto-fit, minmax(260px, 1fr))")
-                .set("gap", "1rem").set("width", "100%").set("margin-bottom", "1.5rem");
+                .set("gap", "1rem")
+                .set("width", "100%")
+                .set("margin-bottom", "1rem");
 
         int    total     = ((Number) madurez.get("total")).intValue();
         long   junior    = ((Number) madurez.get("junior")).longValue();
@@ -37,172 +39,217 @@ public class PanelInsercionLaboral extends VerticalLayout {
         double pctJunior = ((Number) madurez.get("pctJunior")).doubleValue();
         double pctSenior = ((Number) madurez.get("pctSenior")).doubleValue();
 
-        gridMadurez.add(cardMadurez("🌱 Profesional Junior",
-                "De 0 a 3 años de experiencia",
-                junior, pctJunior, "#d1fae5", "#065f46"));
-        gridMadurez.add(cardMadurez("🎯 Mando Consolidado / Senior",
-                "Más de 3 años de experiencia",
-                senior, pctSenior, "#dbeafe", "#1e3a8a"));
+        gridMadurez.add(crearCardKpi(
+                "Profesional Junior (0 a 3 años)",
+                String.format("%.1f%%", pctJunior),
+                String.format("%d de %d titulados", junior, total),
+                "Graduados en etapa temprana de desarrollo profesional"
+        ));
+        gridMadurez.add(crearCardKpi(
+                "Mando Consolidado / Senior (> 3 años)",
+                String.format("%.1f%%", pctSenior),
+                String.format("%d de %d titulados", senior, total),
+                "Profesionales con trayectoria consolidada en la industria"
+        ));
         if (sinDato > 0) {
             double pctSin = total > 0 ? Math.round(sinDato * 1000.0 / total) / 10.0 : 0.0;
-            gridMadurez.add(cardMadurez("❓ Sin dato",
-                    "No registró años de vida profesional",
-                    sinDato, pctSin, "#f3f4f6", "#374151"));
+            gridMadurez.add(crearCardKpi(
+                    "Sin Dato Registrado",
+                    String.format("%.1f%%", pctSin),
+                    String.format("%d de %d titulados", sinDato, total),
+                    "No especificaron años de vida profesional"
+            ));
         }
         add(gridMadurez);
 
         // ── B: KPI — TASA DE INSERCIÓN ACTIVA ────────────────────────────────────
-        add(seccionTitulo("🏆 Tasa de Inserción Laboral Activa"));
+        add(seccionTitulo("Tasa de Inserción Laboral Activa"));
 
         Div kpiBox = new Div();
         kpiBox.getStyle()
-                .set("background", "linear-gradient(135deg, #003366 0%, #1d4ed8 100%)")
-                .set("border-radius", "12px").set("padding", "1.5rem 2rem")
-                .set("display", "flex").set("align-items", "center").set("gap", "2rem")
-                .set("width", "100%").set("margin-bottom", "1.5rem")
-                .set("box-shadow", "0 4px 14px rgba(0,51,102,0.3)");
+                .set("background", "#f8f9fa")
+                .set("border", "1px solid #e2e8f0")
+                .set("border-radius", "8px")
+                .set("padding", "1.2rem")
+                .set("display", "flex")
+                .set("flex-wrap", "wrap")
+                .set("align-items", "center")
+                .set("justify-content", "space-between")
+                .set("gap", "1.5rem")
+                .set("width", "100%")
+                .set("margin-bottom", "1rem")
+                .set("box-shadow", "0 1px 4px rgba(0,0,0,0.06)");
 
         Div valorKpi = new Div();
-        valorKpi.getStyle().set("display", "flex").set("flex-direction", "column");
+        valorKpi.getStyle().set("display", "flex").set("flex-direction", "column").set("gap", "0.2rem");
+
+        Span subKpi = new Span("Indicador de Ocupación Activa");
+        subKpi.getStyle()
+                .set("font-size", "0.82rem")
+                .set("font-weight", "600")
+                .set("color", "#475569")
+                .set("text-transform", "uppercase")
+                .set("letter-spacing", "0.5px");
+
         Span numKpi = new Span(String.format("%.2f%%", tasaInsercion));
-        numKpi.getStyle().set("font-size", "3.5rem").set("font-weight", "900")
-                .set("color", "#ffffff").set("line-height", "1");
-        Span labelKpi = new Span("de los titulados se encuentran laboralmente activos");
-        labelKpi.getStyle().set("color", "rgba(255,255,255,0.8)").set("font-size", "0.9rem").set("margin-top", "0.3rem");
-        valorKpi.add(numKpi, labelKpi);
+        numKpi.getStyle()
+                .set("font-size", "1.8rem")
+                .set("font-weight", "800")
+                .set("color", "#003366")
+                .set("line-height", "1.1");
+
+        Span labelKpi = new Span("de los titulados encuestados se encuentran actualmente en actividad laboral");
+        labelKpi.getStyle()
+                .set("color", "#64748b")
+                .set("font-size", "0.85rem");
+
+        valorKpi.add(subKpi, numKpi, labelKpi);
 
         Div infoKpi = new Div();
-        infoKpi.getStyle().set("display", "flex").set("flex-direction", "column").set("gap", "0.3rem");
-        infoKpi.add(badgeKpi("✅", "Trabajando en una organización"));
-        infoKpi.add(badgeKpi("🚀", "Emprendimiento propio a tiempo completo"));
-        Span nota = new Span("❌  Desempleados no cuentan en la tasa activa");
-        nota.getStyle().set("font-size", "0.8rem").set("color", "rgba(255,255,255,0.5)");
-        infoKpi.add(nota);
+        infoKpi.getStyle().set("display", "flex").set("flex-direction", "column").set("gap", "0.25rem");
 
+        Span c1 = new Span("• Empleados en organizaciones, empresas o entidades");
+        c1.getStyle().set("font-size", "0.82rem").set("color", "#334155");
+        Span c2 = new Span("• Emprendimientos propios o trabajo independiente");
+        c2.getStyle().set("font-size", "0.82rem").set("color", "#334155");
+        Span c3 = new Span("(Personas en búsqueda o desempleadas no computan en la tasa activa)");
+        c3.getStyle().set("font-size", "0.75rem").set("color", "#64748b").set("font-style", "italic");
+
+        infoKpi.add(c1, c2, c3);
         kpiBox.add(valorKpi, infoKpi);
         add(kpiBox);
 
         // ── C: DISTRIBUCIÓN POR SITUACIÓN LABORAL ────────────────────────────────
-        add(seccionTitulo("📋 Distribución por Situación Laboral Actual"));
-        add(tablaFrecuencia(freqSituacion, total));
+        add(seccionTitulo("Distribución por Situación Laboral Actual"));
+        add(tablaFrecuencia(freqSituacion));
 
         // ── D: MÉTRICAS DE INSERCIÓN INICIAL ─────────────────────────────────────
-        add(seccionTitulo("⏱ Métricas de Inserción Inicial"));
+        add(seccionTitulo("Métricas de Inserción Inicial y Rotación"));
 
         Div gridInserciones = new Div();
         gridInserciones.getStyle()
                 .set("display", "grid")
                 .set("grid-template-columns", "repeat(auto-fit, minmax(300px, 1fr))")
-                .set("gap", "1rem").set("width", "100%").set("margin-bottom", "1rem");
+                .set("gap", "1rem")
+                .set("width", "100%")
+                .set("margin-bottom", "1rem");
 
         gridInserciones.add(bloqueFrecuencia(
-                "⏳ Tiempo para Conseguir el Primer Empleo", freqTiempoPrimerEmpleo, "#7c3aed"));
+                "Tiempo para Conseguir el Primer Empleo", freqTiempoPrimerEmpleo));
         gridInserciones.add(bloqueFrecuencia(
-                "🔑 ¿Es su Trabajo Actual el Primer Empleo?", freqPrimerEmpleo, "#0369a1"));
+                "¿Es su Trabajo Actual el Primer Empleo?", freqPrimerEmpleo));
         gridInserciones.add(bloqueFrecuencia(
-                "🔄 Rotación Laboral (Cantidad de Empleos)", freqCantidadEmpleos, "#b45309"));
+                "Rotación Laboral (Cantidad de Empleos)", freqCantidadEmpleos));
         add(gridInserciones);
     }
-
-    // ─── HELPERS ─────────────────────────────────────────────────────────────────
 
     private H3 seccionTitulo(String texto) {
         H3 h = new H3(texto);
         h.getStyle()
-                .set("color", "#003366").set("margin", "1.25rem 0 0.75rem 0")
-                .set("font-size", "1.05rem").set("font-weight", "700")
-                .set("border-bottom", "2px solid #e2e8f0").set("padding-bottom", "0.4rem");
+                .set("color", "#003366")
+                .set("margin", "1.25rem 0 0.5rem 0")
+                .set("font-size", "1.15rem")
+                .set("font-weight", "700");
         return h;
     }
 
-    private Div cardMadurez(String titulo, String descripcion, long cantidad,
-                             double porcentaje, String colorFondo, String colorTexto) {
+    private Div crearCardKpi(String titulo, String valorPrincipal, String valorSecundario, String descripcion) {
         Div card = new Div();
         card.getStyle()
-                .set("background", colorFondo).set("border-radius", "12px")
-                .set("padding", "1.25rem").set("box-shadow", "0 2px 8px rgba(0,0,0,0.07)")
-                .set("display", "flex").set("flex-direction", "column").set("gap", "0.5rem");
+                .set("background", "#f8f9fa")
+                .set("border", "1px solid #e2e8f0")
+                .set("border-radius", "8px")
+                .set("padding", "1.2rem")
+                .set("box-shadow", "0 1px 4px rgba(0,0,0,0.06)")
+                .set("display", "flex")
+                .set("flex-direction", "column")
+                .set("gap", "0.35rem");
 
         Span tit = new Span(titulo);
-        tit.getStyle().set("font-weight", "800").set("font-size", "1rem").set("color", colorTexto);
+        tit.getStyle()
+                .set("font-size", "0.82rem")
+                .set("font-weight", "600")
+                .set("color", "#475569")
+                .set("text-transform", "uppercase")
+                .set("letter-spacing", "0.5px");
+
+        Span val = new Span(valorPrincipal);
+        val.getStyle()
+                .set("font-size", "1.7rem")
+                .set("font-weight", "800")
+                .set("color", "#003366")
+                .set("line-height", "1.1");
+
+        Span sub = new Span(valorSecundario);
+        sub.getStyle()
+                .set("font-size", "0.85rem")
+                .set("font-weight", "600")
+                .set("color", "#1e293b");
 
         Span desc = new Span(descripcion);
-        desc.getStyle().set("font-size", "0.8rem").set("color", colorTexto).set("opacity", "0.7");
+        desc.getStyle()
+                .set("font-size", "0.75rem")
+                .set("color", "#64748b");
 
-        Div valor = new Div();
-        valor.getStyle().set("display", "flex").set("align-items", "baseline").set("gap", "0.6rem");
-
-        Span num = new Span(cantidad + " titulados");
-        num.getStyle().set("font-size", "1.8rem").set("font-weight", "900").set("color", colorTexto);
-
-        Span pct = new Span(String.format("%.1f%%", porcentaje));
-        pct.getStyle().set("font-size", "1.1rem").set("font-weight", "700")
-                .set("color", colorTexto).set("opacity", "0.8");
-
-        valor.add(num, pct);
-        card.add(tit, desc, valor);
+        card.add(tit, val, sub, desc);
         return card;
     }
 
-    private Div badgeKpi(String emoji, String texto) {
-        Div b = new Div();
-        b.getStyle().set("display", "flex").set("align-items", "center").set("gap", "0.4rem");
-        Span e = new Span(emoji);
-        Span t = new Span(texto);
-        t.getStyle().set("color", "rgba(255,255,255,0.88)").set("font-size", "0.87rem").set("font-weight", "500");
-        b.add(e, t);
-        return b;
-    }
-
-    private Div tablaFrecuencia(List<Map<String, Object>> filas, int total) {
+    private Div tablaFrecuencia(List<Map<String, Object>> filas) {
         Div contenedor = new Div();
         contenedor.getStyle()
-                .set("border-radius", "10px").set("overflow", "hidden")
-                .set("box-shadow", "0 2px 8px rgba(0,0,0,0.07)").set("margin-bottom", "1rem");
+                .set("background", "#ffffff")
+                .set("border", "1px solid #e2e8f0")
+                .set("border-radius", "8px")
+                .set("overflow", "hidden")
+                .set("box-shadow", "0 1px 4px rgba(0,0,0,0.06)")
+                .set("margin-bottom", "1rem");
 
         // Encabezado
         Div header = new Div();
         header.getStyle()
-                .set("display", "grid").set("grid-template-columns", "1fr 70px 70px 180px")
-                .set("background", "#003366").set("padding", "0.6rem 1rem").set("gap", "0.5rem");
-        for (String col : new String[]{"Situación Laboral", "N", "%", "Proporción"}) {
+                .set("display", "grid")
+                .set("grid-template-columns", "1fr 80px 80px 180px")
+                .set("background", "#003366")
+                .set("padding", "0.7rem 1rem")
+                .set("gap", "0.5rem");
+
+        for (String col : new String[]{"Situación Laboral", "N°", "%", "Proporción"}) {
             Span s = new Span(col);
-            s.getStyle().set("color", "#ffffff").set("font-weight", "700").set("font-size", "0.8rem");
+            s.getStyle().set("color", "#ffffff").set("font-weight", "700").set("font-size", "0.82rem");
             header.add(s);
         }
         contenedor.add(header);
 
         int idx = 0;
         for (Map<String, Object> fila : filas) {
-            String cat  = fila.get("categoria").toString();
-            long cant   = ((Number) fila.get("cantidad")).longValue();
-            double pct  = ((Number) fila.get("porcentaje")).doubleValue();
-            boolean activo = cat.toLowerCase().contains("trabajando") ||
-                             cat.toLowerCase().contains("emprendimiento");
-            String bg = activo ? "#f0fdf4" : (idx % 2 == 0 ? "#ffffff" : "#f8fafc");
+            String cat = fila.get("categoria").toString();
+            long cant  = ((Number) fila.get("cantidad")).longValue();
+            double pct = ((Number) fila.get("porcentaje")).doubleValue();
+            String bg  = idx % 2 == 0 ? "#ffffff" : "#f8fafc";
 
             Div row = new Div();
             row.getStyle().set("display", "grid")
-                    .set("grid-template-columns", "1fr 70px 70px 180px")
-                    .set("padding", "0.6rem 1rem").set("gap", "0.5rem")
-                    .set("background", bg).set("border-top", "1px solid #e2e8f0")
+                    .set("grid-template-columns", "1fr 80px 80px 180px")
+                    .set("padding", "0.6rem 1rem")
+                    .set("gap", "0.5rem")
+                    .set("background", bg)
+                    .set("border-top", "1px solid #e2e8f0")
                     .set("align-items", "center");
 
             Span catSpan = new Span(cat);
             catSpan.getStyle().set("font-size", "0.85rem").set("color", "#1e293b");
-            if (activo) catSpan.getStyle().set("font-weight", "700");
 
             Span cantSpan = new Span(String.valueOf(cant));
             cantSpan.getStyle().set("font-weight", "700").set("color", "#003366").set("text-align", "center");
 
             Span pctSpan = new Span(String.format("%.1f%%", pct));
-            pctSpan.getStyle().set("font-weight", "700")
-                    .set("color", activo ? "#047857" : "#475569").set("text-align", "center");
+            pctSpan.getStyle().set("font-weight", "700").set("color", "#1e293b").set("text-align", "center");
 
             Div barra = new Div();
             barra.getStyle().set("background", "#e2e8f0").set("border-radius", "4px").set("height", "8px");
             Div rel = new Div();
-            rel.getStyle().set("background", activo ? "#10b981" : "#6366f1")
+            rel.getStyle().set("background", "#003366")
                     .set("border-radius", "4px").set("height", "100%")
                     .set("width", Math.min(pct, 100) + "%");
             barra.add(rel);
@@ -214,15 +261,20 @@ public class PanelInsercionLaboral extends VerticalLayout {
         return contenedor;
     }
 
-    private Div bloqueFrecuencia(String titulo, List<Map<String, Object>> filas, String colorAccent) {
+    private Div bloqueFrecuencia(String titulo, List<Map<String, Object>> filas) {
         Div bloque = new Div();
         bloque.getStyle()
-                .set("border-radius", "10px").set("overflow", "hidden")
-                .set("box-shadow", "0 2px 8px rgba(0,0,0,0.07)");
+                .set("background", "#ffffff")
+                .set("border", "1px solid #e2e8f0")
+                .set("border-radius", "8px")
+                .set("overflow", "hidden")
+                .set("box-shadow", "0 1px 4px rgba(0,0,0,0.06)");
 
         Div header = new Div();
         header.getStyle()
-                .set("background", colorAccent).set("padding", "0.6rem 1rem");
+                .set("background", "#003366")
+                .set("padding", "0.65rem 1rem");
+
         Span titSpan = new Span(titulo);
         titSpan.getStyle().set("color", "#ffffff").set("font-weight", "700").set("font-size", "0.85rem");
         header.add(titSpan);
@@ -237,9 +289,12 @@ public class PanelInsercionLaboral extends VerticalLayout {
 
             Div row = new Div();
             row.getStyle()
-                    .set("padding", "0.5rem 1rem").set("background", bg)
+                    .set("padding", "0.55rem 1rem")
+                    .set("background", bg)
                     .set("border-top", "1px solid #f1f5f9")
-                    .set("display", "flex").set("flex-direction", "column").set("gap", "0.2rem");
+                    .set("display", "flex")
+                    .set("flex-direction", "column")
+                    .set("gap", "0.25rem");
 
             Div linea = new Div();
             linea.getStyle().set("display", "flex").set("justify-content", "space-between")
@@ -249,16 +304,16 @@ public class PanelInsercionLaboral extends VerticalLayout {
             catSpan.getStyle().set("font-size", "0.83rem").set("color", "#334155").set("flex", "1");
 
             Span badge = new Span(cant + "  |  " + String.format("%.1f%%", pct));
-            badge.getStyle().set("font-size", "0.8rem").set("font-weight", "800")
-                    .set("color", colorAccent).set("white-space", "nowrap");
+            badge.getStyle().set("font-size", "0.8rem").set("font-weight", "700")
+                    .set("color", "#003366").set("white-space", "nowrap");
 
             linea.add(catSpan, badge);
 
             Div barraContenedor = new Div();
-            barraContenedor.getStyle().set("background", "#f1f5f9")
+            barraContenedor.getStyle().set("background", "#e2e8f0")
                     .set("border-radius", "3px").set("height", "5px");
             Div barraRel = new Div();
-            barraRel.getStyle().set("background", colorAccent).set("border-radius", "3px")
+            barraRel.getStyle().set("background", "#003366").set("border-radius", "3px")
                     .set("height", "100%").set("width", Math.min(pct, 100) + "%");
             barraContenedor.add(barraRel);
 
