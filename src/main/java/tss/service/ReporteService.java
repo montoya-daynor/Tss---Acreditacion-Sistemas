@@ -93,17 +93,15 @@ public class ReporteService {
 
         // 1. Años de Vida Profesional
         List<Double> aniosProf = datos.stream()
-                .map(RespuestaTitulado::getAniosVidaProfesional)
+                .map(RespuestaTitulado::getAniosVidaProfesionalDecimalCalculado)
                 .filter(Objects::nonNull)
-                .map(Integer::doubleValue)
                 .toList();
         metricas.add(calcularMetrica("Años de Vida Profesional", aniosProf));
 
         // 2. Años Desempleado / Búsqueda
         List<Double> aniosDesemp = datos.stream()
-                .map(RespuestaTitulado::getAniosDesempleado)
+                .map(RespuestaTitulado::getAniosDesempleadoDecimalCalculado)
                 .filter(Objects::nonNull)
-                .map(Integer::doubleValue)
                 .toList();
         metricas.add(calcularMetrica("Años de Búsqueda Laboral", aniosDesemp));
 
@@ -155,26 +153,44 @@ public class ReporteService {
         resultado.put("totalEncuestados", total);
 
         List<Double> aniosProf = datos.stream()
-                .map(RespuestaTitulado::getAniosVidaProfesional)
+                .map(RespuestaTitulado::getAniosVidaProfesionalDecimalCalculado)
                 .filter(Objects::nonNull)
-                .map(Integer::doubleValue)
                 .sorted().toList();
 
-        List<Double> aniosDesemp = datos.stream()
-                .map(RespuestaTitulado::getAniosDesempleado)
+        List<Double> mesesDesemp = datos.stream()
+                .map(r -> {
+                    if (r.getMesesDesempleo() != null) return r.getMesesDesempleo().doubleValue();
+                    if (r.getAniosDesempleoDecimal() != null) return r.getAniosDesempleoDecimal() * 12.0;
+                    return null;
+                })
                 .filter(Objects::nonNull)
-                .map(Integer::doubleValue)
                 .sorted().toList();
+
+        List<Double> aniosDesemp = mesesDesemp.stream()
+                .map(m -> m / 12.0)
+                .sorted().toList();
+
+        int nDesemp = mesesDesemp.size();
+        double medianaMeses = 0.0;
+        double medianaDesempAnios = 0.0;
+        if (nDesemp > 0) {
+            medianaMeses = nDesemp % 2 == 1
+                    ? mesesDesemp.get(nDesemp / 2)
+                    : (mesesDesemp.get((nDesemp / 2) - 1) + mesesDesemp.get(nDesemp / 2)) / 2.0;
+            // Calculada desde meses sin redondeos intermedios: 10.5 / 12.0 = 0.875
+            medianaDesempAnios = medianaMeses / 12.0;
+        }
 
         resultado.put("mediaAntigüedad",    aniosProf.isEmpty()  ? 0.0 : redondear(aniosProf.stream().mapToDouble(Double::doubleValue).average().orElse(0), 2));
         resultado.put("medianaAntigüedad",  calcularMediana(aniosProf));
         resultado.put("desvAntigüedad",     calcularDesv(aniosProf));
         resultado.put("nAntigüedad",        aniosProf.size());
 
-        resultado.put("mediaDesempleo",     aniosDesemp.isEmpty() ? 0.0 : redondear(aniosDesemp.stream().mapToDouble(Double::doubleValue).average().orElse(0), 2));
-        resultado.put("medianaDesempleo",   calcularMediana(aniosDesemp));
-        resultado.put("desvDesempleo",      calcularDesv(aniosDesemp));
-        resultado.put("nDesempleo",         aniosDesemp.size());
+        resultado.put("mediaDesempleo",        aniosDesemp.isEmpty() ? 0.0 : redondear(aniosDesemp.stream().mapToDouble(Double::doubleValue).average().orElse(0), 2));
+        resultado.put("medianaDesempleo",      redondear(medianaDesempAnios, 2));
+        resultado.put("medianaDesempleoMeses", redondear(medianaMeses, 1));
+        resultado.put("desvDesempleo",         calcularDesv(aniosDesemp));
+        resultado.put("nDesempleo",            nDesemp);
 
         return resultado;
     }
@@ -218,8 +234,8 @@ public class ReporteService {
     // DISTRIBUCIÓN CON FRECUENCIA ABSOLUTA Y RELATIVA ORDENADA DE MAYOR A MENOR
     public List<Map<String, Object>> calcularFrecuenciaRelativa(List<RespuestaTitulado> datos,
             Function<RespuestaTitulado, String> extractor) {
-        int total = datos.size();
         Map<String, Long> freq = frecuenciaPor(datos, extractor);
+        long total = freq.values().stream().mapToLong(Long::longValue).sum();
 
         return freq.entrySet().stream()
                 .sorted(Map.Entry.<String, Long>comparingByValue().reversed())

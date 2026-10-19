@@ -45,6 +45,31 @@ public class GraficosFactory {
         return chart;
     }
 
+    // GRÁFICO DE BARRAS HORIZONTALES A PARTIR DE UNA LISTA ORDENADA DE FRECUENCIAS
+    public EChartsComponent barrasDesdeFrecuencia(List<Map<String, Object>> filas, String titulo) {
+        String cats = filas.stream()
+                .map(f -> "\"" + f.get("categoria").toString().replace("\"", "\\\"") + "\"")
+                .collect(Collectors.joining(","));
+        String vals = filas.stream()
+                .map(f -> f.get("cantidad").toString())
+                .collect(Collectors.joining(","));
+
+        String json = """
+            {
+              "tooltip": {},
+              "title": { "text": "%s", "left": "center" },
+              "xAxis": { "type": "value" },
+              "yAxis": { "type": "category", "data": [%s], "inverse": true },
+              "series": [{ "type": "bar", "data": [%s],
+                "label": { "show": true, "position": "right" } }]
+            }
+            """.formatted(titulo, cats, vals);
+
+        EChartsComponent chart = new EChartsComponent();
+        chart.setOptions(json);
+        return chart;
+    }
+
     // GRÁFICO DE TORTA / DONA PARA UNA VARIABLE CATEGÓRICA
     public EChartsComponent torta(List<RespuestaTitulado> datos,
             Function<RespuestaTitulado, String> extractor, String titulo) {

@@ -4,6 +4,7 @@ import com.vaadin.flow.component.html.*;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 // BLOQUE DE SEGMENTACIÓN, INSERCIÓN Y FRECUENCIAS — ESTILO NEUTRO INSTITUCIONAL
@@ -39,15 +40,17 @@ public class PanelInsercionLaboral extends VerticalLayout {
         double pctJunior = ((Number) madurez.get("pctJunior")).doubleValue();
         double pctSenior = ((Number) madurez.get("pctSenior")).doubleValue();
 
+        Locale locEs = Locale.forLanguageTag("es-ES");
+
         gridMadurez.add(crearCardKpi(
                 "Profesional Junior (0 a 3 años)",
-                String.format("%.1f%%", pctJunior),
+                String.format(locEs, "%.1f%%", pctJunior),
                 String.format("%d de %d titulados", junior, total),
                 "Graduados en etapa temprana de desarrollo profesional"
         ));
         gridMadurez.add(crearCardKpi(
                 "Mando Consolidado / Senior (> 3 años)",
-                String.format("%.1f%%", pctSenior),
+                String.format(locEs, "%.1f%%", pctSenior),
                 String.format("%d de %d titulados", senior, total),
                 "Profesionales con trayectoria consolidada en la industria"
         ));
@@ -55,7 +58,7 @@ public class PanelInsercionLaboral extends VerticalLayout {
             double pctSin = total > 0 ? Math.round(sinDato * 1000.0 / total) / 10.0 : 0.0;
             gridMadurez.add(crearCardKpi(
                     "Sin Dato Registrado",
-                    String.format("%.1f%%", pctSin),
+                    String.format(locEs, "%.1f%%", pctSin),
                     String.format("%d de %d titulados", sinDato, total),
                     "No especificaron años de vida profesional"
             ));
@@ -91,7 +94,7 @@ public class PanelInsercionLaboral extends VerticalLayout {
                 .set("text-transform", "uppercase")
                 .set("letter-spacing", "0.5px");
 
-        Span numKpi = new Span(String.format("%.2f%%", tasaInsercion));
+        Span numKpi = new Span(String.format(locEs, "%.2f%%", tasaInsercion));
         numKpi.getStyle()
                 .set("font-size", "1.8rem")
                 .set("font-weight", "800")
@@ -134,12 +137,16 @@ public class PanelInsercionLaboral extends VerticalLayout {
                 .set("width", "100%")
                 .set("margin-bottom", "1rem");
 
+        long nTiempo = freqTiempoPrimerEmpleo.stream().mapToLong(f -> ((Number) f.get("cantidad")).longValue()).sum();
+        long nPrimer = freqPrimerEmpleo.stream().mapToLong(f -> ((Number) f.get("cantidad")).longValue()).sum();
+        long nRotacion = freqCantidadEmpleos.stream().mapToLong(f -> ((Number) f.get("cantidad")).longValue()).sum();
+
         gridInserciones.add(bloqueFrecuencia(
-                "Tiempo para Conseguir el Primer Empleo", freqTiempoPrimerEmpleo));
+                "Tiempo para Conseguir el Primer Empleo (n = " + nTiempo + ")", freqTiempoPrimerEmpleo));
         gridInserciones.add(bloqueFrecuencia(
-                "¿Es su Trabajo Actual el Primer Empleo?", freqPrimerEmpleo));
+                "¿Es su Trabajo Actual el Primer Empleo? (n = " + nPrimer + ")", freqPrimerEmpleo));
         gridInserciones.add(bloqueFrecuencia(
-                "Rotación Laboral (Cantidad de Empleos)", freqCantidadEmpleos));
+                "Rotación Laboral (Cantidad de Empleos) (n = " + nRotacion + ")", freqCantidadEmpleos));
         add(gridInserciones);
     }
 
@@ -243,7 +250,7 @@ public class PanelInsercionLaboral extends VerticalLayout {
             Span cantSpan = new Span(String.valueOf(cant));
             cantSpan.getStyle().set("font-weight", "700").set("color", "#003366").set("text-align", "center");
 
-            Span pctSpan = new Span(String.format("%.1f%%", pct));
+            Span pctSpan = new Span(String.format(Locale.forLanguageTag("es-ES"), "%.1f%%", pct));
             pctSpan.getStyle().set("font-weight", "700").set("color", "#1e293b").set("text-align", "center");
 
             Div barra = new Div();
@@ -303,7 +310,7 @@ public class PanelInsercionLaboral extends VerticalLayout {
             Span catSpan = new Span(cat);
             catSpan.getStyle().set("font-size", "0.83rem").set("color", "#334155").set("flex", "1");
 
-            Span badge = new Span(cant + "  |  " + String.format("%.1f%%", pct));
+            Span badge = new Span(cant + "  |  " + String.format(Locale.forLanguageTag("es-ES"), "%.1f%%", pct));
             badge.getStyle().set("font-size", "0.8rem").set("font-weight", "700")
                     .set("color", "#003366").set("white-space", "nowrap");
 

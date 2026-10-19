@@ -9,9 +9,12 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import tss.service.MetricaEstadistica;
 
 import java.util.List;
+import java.util.Locale;
 
 // PANEL DE ANÁLISIS ESTADÍSTICO DESCRIPTIVO: MEDIA, MEDIANA Y DESVIACIÓN ESTÁNDAR
 public class PanelEstadisticas extends VerticalLayout {
+
+    private static final Locale LOC_ES = Locale.forLanguageTag("es-ES");
 
     public PanelEstadisticas(List<MetricaEstadistica> metricas, com.vaadin.flow.component.Component graficoEstadistico) {
         setWidthFull();
@@ -48,11 +51,11 @@ public class PanelEstadisticas extends VerticalLayout {
         // TABLA ESTRUCTURADA DE INDICADORES
         Grid<MetricaEstadistica> tabla = new Grid<>(MetricaEstadistica.class, false);
         tabla.addColumn(MetricaEstadistica::variable).setHeader("Variable Evaluada").setFlexGrow(2);
-        tabla.addColumn(m -> String.format("%.2f", m.media())).setHeader("Media (x̄)").setAutoWidth(true);
-        tabla.addColumn(m -> String.format("%.2f", m.mediana())).setHeader("Mediana (Me)").setAutoWidth(true);
-        tabla.addColumn(m -> String.format("± %.2f", m.desviacionEstandar())).setHeader("Desv. Estándar (s)").setAutoWidth(true);
-        tabla.addColumn(m -> String.format("%.1f", m.min())).setHeader("Mínimo").setAutoWidth(true);
-        tabla.addColumn(m -> String.format("%.1f", m.max())).setHeader("Máximo").setAutoWidth(true);
+        tabla.addColumn(m -> String.format(LOC_ES, "%.2f", m.media())).setHeader("Media (x̄)").setAutoWidth(true);
+        tabla.addColumn(m -> String.format(LOC_ES, "%.2f", m.mediana())).setHeader("Mediana (Me)").setAutoWidth(true);
+        tabla.addColumn(m -> String.format(LOC_ES, "± %.2f", m.desviacionEstandar())).setHeader("Desv. Estándar (s)").setAutoWidth(true);
+        tabla.addColumn(m -> String.format(LOC_ES, "%.1f", m.min())).setHeader("Mínimo").setAutoWidth(true);
+        tabla.addColumn(m -> String.format(LOC_ES, "%.1f", m.max())).setHeader("Máximo").setAutoWidth(true);
         tabla.addColumn(MetricaEstadistica::muestra).setHeader("Muestra (N)").setAutoWidth(true);
 
         tabla.setItems(metricas);
@@ -117,7 +120,7 @@ public class PanelEstadisticas extends VerticalLayout {
         Span lblMedia = new Span("Media: ");
         lblMedia.getStyle().set("color", "#64748b").set("font-size", "0.85rem");
 
-        Span valMedia = new Span(String.format("%.2f", m.media()));
+        Span valMedia = new Span(String.format(LOC_ES, "%.2f", m.media()));
         valMedia.getStyle()
                 .set("font-size", "1.6rem")
                 .set("font-weight", "700")
@@ -135,10 +138,10 @@ public class PanelEstadisticas extends VerticalLayout {
                 .set("font-size", "0.85rem")
                 .set("color", "#475569");
 
-        Span spanMediana = new Span("Mediana: " + String.format("%.2f", m.mediana()));
+        Span spanMediana = new Span("Mediana: " + String.format(LOC_ES, "%.2f", m.mediana()));
         spanMediana.getStyle().set("font-weight", "500");
 
-        Span spanDesv = new Span("Desv: ±" + String.format("%.2f", m.desviacionEstandar()));
+        Span spanDesv = new Span("Desv: ±" + String.format(LOC_ES, "%.2f", m.desviacionEstandar()));
         spanDesv.getStyle().set("font-weight", "500").set("color", "#d97706");
 
         filaDetalles.add(spanMediana, spanDesv);
@@ -151,7 +154,7 @@ public class PanelEstadisticas extends VerticalLayout {
                 .set("font-size", "0.75rem")
                 .set("color", "#94a3b8");
 
-        Span rango = new Span("Rango: [" + String.format("%.1f", m.min()) + " - " + String.format("%.1f", m.max()) + "]");
+        Span rango = new Span("Rango: [" + String.format(LOC_ES, "%.1f", m.min()) + " - " + String.format(LOC_ES, "%.1f", m.max()) + "]");
         Span n = new Span("N = " + m.muestra());
 
         filaPie.add(rango, n);

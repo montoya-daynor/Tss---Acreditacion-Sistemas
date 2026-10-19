@@ -3,6 +3,7 @@ package tss.view.componente.dashboard;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Span;
 
+import java.util.Locale;
 import java.util.Map;
 
 // PANEL DE KPIS DE PERFIL Y EMPLEABILIDAD — EXACTAMENTE IGUAL A LAS DEMÁS PESTAÑAS
@@ -26,6 +27,8 @@ public class PanelKpiEmpleabilidad extends Div {
         double desvDesemp    = ((Number) resumen.get("desvDesempleo")).doubleValue();
         int    nDesemp       = ((Number) resumen.get("nDesempleo")).intValue();
 
+        Locale locEs = Locale.forLanguageTag("es-ES");
+
         // CARD 1: Total de Encuestados
         add(crearCardKpi(
                 "Total de Encuestados",
@@ -37,23 +40,27 @@ public class PanelKpiEmpleabilidad extends Div {
         // CARD 2: Antigüedad Profesional
         add(crearCardKpi(
                 "Antigüedad Profesional",
-                String.format("%.2f años", mediaAntig),
-                String.format("Mediana: %.2f | Desv: ±%.2f", medianaAntig, desvAntig),
+                String.format(locEs, "%.2f años", mediaAntig),
+                String.format(locEs, "Mediana: %.2f | Desv: ±%.2f", medianaAntig, desvAntig),
                 String.format("Promedio de vida profesional (N=%d)", nAntig)
         ));
 
         // CARD 3: Período de Desempleo
+        String etiquetaAnio = Math.abs(mediaDesemp - 1.0) < 0.005 ? "año" : "años";
+        double mesesMediana = resumen.containsKey("medianaDesempleoMeses")
+                ? ((Number) resumen.get("medianaDesempleoMeses")).doubleValue()
+                : Math.round(medianaDesemp * 12.0 * 10.0) / 10.0;
         add(crearCardKpi(
                 "Período de Desempleo",
-                String.format("%.2f años", mediaDesemp),
-                String.format("Mediana: %.2f | Desv: ±%.2f", medianaDesemp, desvDesemp),
+                String.format(locEs, "%.2f %s", mediaDesemp, etiquetaAnio),
+                String.format(locEs, "Mediana: %.2f años (%.1f meses) | Desv: ±%.2f", medianaDesemp, mesesMediana, desvDesemp),
                 String.format("Tiempo promedio de búsqueda (N=%d)", nDesemp)
         ));
 
         // CARD 4: Muestra Válida
         add(crearCardKpi(
                 "Tasa de Datos Completos",
-                String.format("%.1f%%", n > 0 ? (nAntig * 100.0 / n) : 0.0),
+                String.format(locEs, "%.1f%%", n > 0 ? (nAntig * 100.0 / n) : 0.0),
                 String.format("%d de %d completaron sección laboral", nAntig, n),
                 "Proporción de respuestas con información laboral"
         ));

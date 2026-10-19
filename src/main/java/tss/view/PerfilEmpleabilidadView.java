@@ -14,6 +14,7 @@ import tss.view.componente.dashboard.GraficosFactory;
 import tss.view.componente.dashboard.PanelInsercionLaboral;
 import tss.view.componente.dashboard.PanelKpiEmpleabilidad;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
@@ -47,9 +48,43 @@ public class PerfilEmpleabilidadView extends VerticalLayout {
         List<Map<String, Object>> freqTiempoEmpleo = reporteService.calcularFrecuenciaRelativa(
                 datos, RespuestaTitulado::getTiempoPrimerEmpleo);
         List<Map<String, Object>> freqPrimerEmpleo = reporteService.calcularFrecuenciaRelativa(
-                datos, r -> r.getPrimerEmpleo() != null ? (r.getPrimerEmpleo() ? "SÍ" : "NO") : "Sin dato");
+                datos, r -> r.getPrimerEmpleo() != null ? (r.getPrimerEmpleo() ? "SÍ" : "NO") : null);
         List<Map<String, Object>> freqCantidadEmpleos = reporteService.calcularFrecuenciaRelativa(
                 datos, RespuestaTitulado::getCantidadEmpleos);
+
+        // ORDEN CRONOLÓGICO: Ya trabajaba antes de titularse, Menos de 1 mes, 1-4, 4-8, 8-12, Más de 12 meses
+        List<String> ordenCronologico = List.of(
+                "Ya trabajaba antes de titularse",
+                "Menos de 1 mes",
+                "Entre 1 - 4 meses",
+                "Entre 4 - 8 meses",
+                "Entre 8 - 12 meses",
+                "Más de 12 meses"
+        );
+        freqTiempoEmpleo.sort(Comparator.comparingInt(m -> {
+            String cat = m.get("categoria").toString().trim();
+            for (int i = 0; i < ordenCronologico.size(); i++) {
+                if (cat.equalsIgnoreCase(ordenCronologico.get(i)) ||
+                    (i == 2 && cat.contains("1 - 4")) ||
+                    (i == 3 && cat.contains("4 - 8")) ||
+                    (i == 4 && cat.contains("8 - 12"))) {
+                    return i;
+                }
+            }
+            return 999;
+        }));
+
+        // ORDEN DE ROTACIÓN: 1, 2, 3, Más de 3
+        List<String> ordenRotacion = List.of("1", "2", "3", "Más de 3");
+        freqCantidadEmpleos.sort(Comparator.comparingInt(m -> {
+            String cat = m.get("categoria").toString().trim();
+            for (int i = 0; i < ordenRotacion.size(); i++) {
+                if (cat.equalsIgnoreCase(ordenRotacion.get(i))) {
+                    return i;
+                }
+            }
+            return 999;
+        }));
 
         add(new PanelInsercionLaboral(
                 madurez, tasaInsercion,
@@ -58,14 +93,17 @@ public class PerfilEmpleabilidadView extends VerticalLayout {
         // ─── 4. BLOQUE 3: GRÁFICOS DE DISTRIBUCIÓN ───────────────────────────────
         add(seccionTitulo("Distribución Gráfica de Indicadores de Empleabilidad"));
 
+        long nTiempo = freqTiempoEmpleo.stream().mapToLong(f -> ((Number) f.get("cantidad")).longValue()).sum();
+        long nRotacion = freqCantidadEmpleos.stream().mapToLong(f -> ((Number) f.get("cantidad")).longValue()).sum();
+
         Div gridBarras = gridResponsivo();
         gridBarras.add(
             seccionGrafico("Situación Laboral Actual",
                 graficos.barras(datos, RespuestaTitulado::getSituacionLaboral, "Situación Laboral")),
-            seccionGrafico("Tiempo para Conseguir Primer Empleo",
-                graficos.barras(datos, RespuestaTitulado::getTiempoPrimerEmpleo, "Tiempo de Inserción")),
-            seccionGrafico("Rotación Laboral (Cantidad de Empleos)",
-                graficos.barras(datos, RespuestaTitulado::getCantidadEmpleos, "Cantidad de Empleos"))
+            seccionGrafico("Tiempo para Conseguir Primer Empleo (n = " + nTiempo + ")",
+                graficos.barrasDesdeFrecuencia(freqTiempoEmpleo, "Tiempo de Inserción")),
+            seccionGrafico("Rotación Laboral (Cantidad de Empleos) (n = " + nRotacion + ")",
+                graficos.barrasDesdeFrecuencia(freqCantidadEmpleos, "Cantidad de Empleos"))
         );
         add(gridBarras);
     }

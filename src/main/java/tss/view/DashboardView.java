@@ -7,6 +7,7 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import tss.entity.RespuestaTitulado;
+import tss.service.CsvTituladosImportService;
 import tss.service.ReporteService;
 import tss.service.RespuestaTituladoService;
 import tss.view.componente.dashboard.GraficosFactory;
@@ -20,7 +21,7 @@ import java.util.List;
 @PageTitle("Dashboard - Análisis de Mercado UMSS")
 public class DashboardView extends VerticalLayout {
 
-    public DashboardView(RespuestaTituladoService tituladoService, ReporteService reporteService) {
+    public DashboardView(RespuestaTituladoService tituladoService, ReporteService reporteService, CsvTituladosImportService importService) {
         setPadding(true);
         setSpacing(true);
         setWidthFull();
@@ -28,10 +29,10 @@ public class DashboardView extends VerticalLayout {
         List<RespuestaTitulado> datos = tituladoService.listarTodos();
         GraficosFactory graficos = new GraficosFactory(reporteService);
 
-        // SECCIÓN SUPERIOR: TÍTULO Y EXPORTACIÓN
+        // SECCIÓN SUPERIOR: TÍTULO Y EXPORTACIÓN / CARGA CSV
         add(
             new H2("Dashboard — Análisis de Mercado Ingeniería en Sistemas"),
-            new PanelExportacion(reporteService),
+            new PanelExportacion(reporteService, importService),
             new H3("Respuestas Recibidas (" + datos.size() + ")"),
             new TablaRespuestas(datos)
         );
