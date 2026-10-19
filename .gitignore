@@ -34,3 +34,7 @@ build/
 
 ### Environment ###
 .env
+
+### Vaadin / Frontend ###
+node_modules/
+.vaadin-node-tasks.lock
