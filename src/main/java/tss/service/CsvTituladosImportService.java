@@ -22,6 +22,7 @@ import java.util.List;
 public class CsvTituladosImportService {
 
     private final JdbcTemplate jdbcTemplate;
+    private final RespuestaTituladoService tituladoService;
 
     private static final DateTimeFormatter[] DATE_FORMATTERS = new DateTimeFormatter[] {
             DateTimeFormatter.ofPattern("d/M/yyyy H:m:s"),
@@ -33,8 +34,9 @@ public class CsvTituladosImportService {
             DateTimeFormatter.ISO_LOCAL_DATE_TIME
     };
 
-    public CsvTituladosImportService(JdbcTemplate jdbcTemplate) {
+    public CsvTituladosImportService(JdbcTemplate jdbcTemplate, RespuestaTituladoService tituladoService) {
         this.jdbcTemplate = jdbcTemplate;
+        this.tituladoService = tituladoService;
     }
 
     public static class ImportResult {
@@ -255,6 +257,10 @@ public class CsvTituladosImportService {
 
             // Ajustar secuencia de id al valor máximo
             jdbcTemplate.execute("SELECT setval(pg_get_serial_sequence('respuesta_titulado', 'id'), COALESCE(max(id), 1)) FROM respuesta_titulado;");
+
+            if (tituladoService != null) {
+                tituladoService.invalidarCache();
+            }
 
             return new ImportResult(true, batchArgs.size(),
                     "¡" + batchArgs.size() + " registros cargados exitosamente!", advertencias);

@@ -5,12 +5,15 @@ import org.springframework.transaction.annotation.Transactional;
 import tss.entity.*;
 import tss.repository.RespuestaTituladoRepository;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 @Service
 public class RespuestaTituladoService {
 
     private final RespuestaTituladoRepository repository;
+    private volatile List<RespuestaTitulado> cache = null;
 
     public RespuestaTituladoService(RespuestaTituladoRepository repository) {
         this.repository = repository;
@@ -29,11 +32,25 @@ public class RespuestaTituladoService {
             respuesta.getAsignaturasInutiles().forEach(a -> a.setRespuestaTitulado(respuesta));
         if (respuesta.getEmprendedor() != null)
             respuesta.getEmprendedor().setRespuestaTitulado(respuesta);
-        return repository.save(respuesta);
+        RespuestaTitulado guardado = repository.save(respuesta);
+        invalidarCache();
+        return guardado;
     }
 
-    // RETORNA TODAS LAS RESPUESTAS PARA EL DASHBOARD
+    // RETORNA TODAS LAS RESPUESTAS PARA EL DASHBOARD CON CACHÉ EN MEMORIA
     public List<RespuestaTitulado> listarTodos() {
-        return repository.findAll();
+        if (cache == null) {
+            synchronized (this) {
+                if (cache == null) {
+                    cache = Collections.unmodifiableList(new ArrayList<>(repository.findAll()));
+                }
+            }
+        }
+        return cache;
+    }
+
+    // INVALIDA LA CACHÉ CUANDO SE IMPORTA O ACTUALIZA LA INFORMACIÓN
+    public synchronized void invalidarCache() {
+        this.cache = null;
     }
 }

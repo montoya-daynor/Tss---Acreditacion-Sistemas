@@ -27,15 +27,23 @@ class EChartsChart extends LitElement {
         return html`<div id="chart"></div>`;
     }
 
-    // CARGA ECHARTS DESDE CDN Y RENDERIZA EL GRÁFICO
+    // CARGA ECHARTS DESDE CDN DE FORMA ÚNICA (SINGLETON PROMISE) Y RENDERIZA EL GRÁFICO
     firstUpdated() {
         if (window.echarts) {
             this._init();
         } else {
-            const script = document.createElement('script');
-            script.src = 'https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js';
-            script.onload = () => this._init();
-            document.head.appendChild(script);
+            if (!window._echartsLoadingPromise) {
+                window._echartsLoadingPromise = new Promise((resolve, reject) => {
+                    const script = document.createElement('script');
+                    script.src = 'https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js';
+                    script.onload = () => resolve();
+                    script.onerror = (err) => reject(err);
+                    document.head.appendChild(script);
+                });
+            }
+            window._echartsLoadingPromise
+                .then(() => this._init())
+                .catch(err => console.error('Error cargando ECharts:', err));
         }
     }
 

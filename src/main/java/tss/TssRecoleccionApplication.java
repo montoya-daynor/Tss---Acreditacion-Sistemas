@@ -7,6 +7,12 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.context.annotation.Bean;
+import tss.repository.RespuestaTituladoRepository;
+import tss.service.CsvTituladosImportService;
+import java.io.InputStream;
+
 @SpringBootApplication
 public class TssRecoleccionApplication {
 
@@ -16,6 +22,20 @@ public class TssRecoleccionApplication {
 
 	public static void main(String[] args) {
 		SpringApplication.run(TssRecoleccionApplication.class, args);
+	}
+
+	@Bean
+	public CommandLineRunner inicializarDatosSiVacio(RespuestaTituladoRepository repository, CsvTituladosImportService importService) {
+		return args -> {
+			if (repository.count() == 0) {
+				try (InputStream is = TssRecoleccionApplication.class.getResourceAsStream("/encuesta_titulados_limpio_v2.csv")) {
+					if (is != null) {
+						importService.importar(is);
+					}
+				} catch (Exception ignored) {
+				}
+			}
+		};
 	}
 
 	public static void cargarDotEnv() {

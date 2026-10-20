@@ -25,7 +25,7 @@ public class CsvTituladosImportServiceTest {
     private JdbcTemplate jdbcTemplate;
 
     @Test
-    void testImportSampleCsv() {
+    void testImportSampleCsv() throws Exception {
         // Build a mock 55-column CSV with 1 header and 2 rows
         StringBuilder csv = new StringBuilder();
         // 55 headers
@@ -91,6 +91,7 @@ public class CsvTituladosImportServiceTest {
         row1[53] = "30";
         row1[54] = "6";
 
+        row1[0] = "999999";
         for (int i = 0; i < 55; i++) {
             csv.append(row1[i]).append(i == 54 ? "\n" : ";");
         }
@@ -104,7 +105,17 @@ public class CsvTituladosImportServiceTest {
         Integer count = jdbcTemplate.queryForObject("SELECT count(*) FROM respuesta_titulado", Integer.class);
         assertEquals(1, count);
 
-        // Clean up test row
-        jdbcTemplate.execute("DELETE FROM respuesta_titulado;");
+        // Re-establecer los 148 registros oficiales para la aplicación y los demás tests
+        java.io.InputStream is = getClass().getResourceAsStream("/encuesta_titulados_limpio_v2.csv");
+        if (is != null) {
+            try {
+                importService.importar(is);
+            } finally {
+                try {
+                    is.close();
+                } catch (Exception ignored) {
+                }
+            }
+        }
     }
 }
