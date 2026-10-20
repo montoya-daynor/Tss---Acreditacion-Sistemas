@@ -25,12 +25,24 @@ public class TssRecoleccionApplication {
 	}
 
 	@Bean
-	public CommandLineRunner inicializarDatosSiVacio(RespuestaTituladoRepository repository, CsvTituladosImportService importService) {
+	public CommandLineRunner inicializarDatosSiVacio(
+			RespuestaTituladoRepository repository,
+			CsvTituladosImportService importService,
+			tss.repository.RespuestaEmpleadorRepository empleadorRepo,
+			tss.service.CsvEmpleadoresImportService empleadorImportService) {
 		return args -> {
 			if (repository.count() == 0) {
 				try (InputStream is = TssRecoleccionApplication.class.getResourceAsStream("/encuesta_titulados_limpio_v2.csv")) {
 					if (is != null) {
 						importService.importar(is);
+					}
+				} catch (Exception ignored) {
+				}
+			}
+			if (empleadorRepo.count() == 0) {
+				try (InputStream is = TssRecoleccionApplication.class.getResourceAsStream("/encuesta_empleadores.csv")) {
+					if (is != null) {
+						empleadorImportService.importar(is);
 					}
 				} catch (Exception ignored) {
 				}

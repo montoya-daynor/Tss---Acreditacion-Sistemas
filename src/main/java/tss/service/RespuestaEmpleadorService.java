@@ -11,9 +11,14 @@ import java.util.List;
 public class RespuestaEmpleadorService {
 
     private final RespuestaEmpleadorRepository repository;
+    private volatile List<RespuestaEmpleador> cache = null;
 
     public RespuestaEmpleadorService(RespuestaEmpleadorRepository repository) {
         this.repository = repository;
+    }
+
+    public void invalidarCache() {
+        this.cache = null;
     }
 
     // GUARDA LA RESPUESTA DEL EMPLEADOR Y SUS CARGOS EN BD
@@ -21,11 +26,22 @@ public class RespuestaEmpleadorService {
     public RespuestaEmpleador guardar(RespuestaEmpleador respuesta) {
         if (respuesta.getCargos() != null)
             respuesta.getCargos().forEach(c -> c.setRespuestaEmpleador(respuesta));
-        return repository.save(respuesta);
+        RespuestaEmpleador guardado = repository.save(respuesta);
+        invalidarCache();
+        return guardado;
     }
 
-    // RETORNA TODAS LAS RESPUESTAS DE EMPLEADORES PARA EL DASHBOARD
+    // RETORNA TODAS LAS RESPUESTAS DE EMPLEADORES (CON CACHÉ EN MEMORIA)
     public List<RespuestaEmpleador> listarTodos() {
-        return repository.findAll();
+        List<RespuestaEmpleador> local = cache;
+        if (local == null) {
+            synchronized (this) {
+                if (cache == null) {
+                    cache = repository.findAll();
+                }
+                local = cache;
+            }
+        }
+        return local;
     }
 }
