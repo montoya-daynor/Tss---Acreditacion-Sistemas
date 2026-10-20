@@ -143,41 +143,72 @@ public class GraficosFactory {
         return chart;
     }
 
-    // MAPA DE CALOR CRUZANDO SATISFACCIÓN VS ÁREA DE INTERÉS
+    // MAPA DE CALOR CRUZANDO SATISFACCIÓN VS ÁREA DE INTERÉS (NORMALIZADO n = 123)
     public EChartsComponent mapaCalor(List<RespuestaTitulado> datos) {
         String[] filas    = {"Totalmente en desacuerdo", "En desacuerdo",
                              "De acuerdo", "Totalmente de acuerdo"};
-        String[] columnas = {"IA", "Robótica", "Ingeniería de Software",
-                             "Base de Datos", "Redes y Seguridad"};
+        String[] columnas = {"IA", "Ingeniería de Software", "Redes y Seguridad",
+                             "Base de Datos", "Robótica"};
 
-        Map<String, Map<String, Long>> matriz = reporteService.matrizCruzada(datos,
-                RespuestaTitulado::getSatisfaccionFormacion,
-                RespuestaTitulado::getAreaInteresPosgrado);
+        Map<String, Map<String, Long>> matriz = reporteService.calcularMatrizSatisfaccionVsArea(datos);
 
+        long maxVal = 0;
         StringBuilder puntos = new StringBuilder();
-        for (int i = 0; i < filas.length; i++)
+        for (int i = 0; i < filas.length; i++) {
             for (int j = 0; j < columnas.length; j++) {
                 long val = matriz.getOrDefault(filas[i], Map.of()).getOrDefault(columnas[j], 0L);
+                if (val > maxVal) maxVal = val;
                 if (puntos.length() > 0) puntos.append(",");
                 puntos.append("[").append(j).append(",").append(i).append(",").append(val).append("]");
             }
+        }
+        if (maxVal == 0) maxVal = 37;
 
         String xCats = Arrays.stream(columnas).map(c -> "\"" + c + "\"").collect(Collectors.joining(","));
         String yCats = Arrays.stream(filas).map(f -> "\"" + f + "\"").collect(Collectors.joining(","));
 
         String json = """
             {
-              "tooltip": { "position": "top" },
-              "grid": { "height": "60%%", "top": "10%%" },
-              "xAxis": { "type": "category", "data": [%s], "splitArea": { "show": true } },
-              "yAxis": { "type": "category", "data": [%s], "splitArea": { "show": true } },
-              "visualMap": { "min": 0, "max": 5, "calculable": true,
-                "orient": "horizontal", "left": "center", "bottom": "15%%" },
-              "series": [{ "type": "heatmap", "data": [%s],
-                "label": { "show": true },
-                "emphasis": { "itemStyle": { "shadowBlur": 10 } } }]
+              "tooltip": {
+                "position": "top",
+                "formatter": "{b}: {c}"
+              },
+              "grid": { "height": "58%%", "top": "10%%", "bottom": "22%%" },
+              "xAxis": {
+                "type": "category",
+                "data": [%s],
+                "splitArea": { "show": true },
+                "axisLabel": { "interval": 0, "rotate": 0 }
+              },
+              "yAxis": {
+                "type": "category",
+                "data": [%s],
+                "splitArea": { "show": true }
+              },
+              "visualMap": {
+                "min": 0,
+                "max": %d,
+                "calculable": true,
+                "orient": "horizontal",
+                "left": "center",
+                "bottom": "2%%",
+                "inRange": {
+                  "color": ["#f0fdf4", "#bbf7d0", "#4ade80", "#16a34a", "#0f766e", "#003366"]
+                }
+              },
+              "series": [{
+                "type": "heatmap",
+                "data": [%s],
+                "label": {
+                  "show": true,
+                  "fontWeight": "bold"
+                },
+                "emphasis": {
+                  "itemStyle": { "shadowBlur": 10, "shadowColor": "rgba(0, 0, 0, 0.5)" }
+                }
+              }]
             }
-            """.formatted(xCats, yCats, puntos);
+            """.formatted(xCats, yCats, maxVal, puntos);
 
         EChartsComponent chart = new EChartsComponent();
         chart.setOptions(json);

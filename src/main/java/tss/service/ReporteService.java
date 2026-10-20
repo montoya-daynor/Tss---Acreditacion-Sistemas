@@ -46,6 +46,70 @@ public class ReporteService {
         return matriz;
     }
 
+    // NORMALIZACIÓN BÁSICA DE TEXTO: TRIM, MINÚSCULAS Y SIN TILDES
+    public static String normalizarTextoBasico(String s) {
+        if (s == null) return null;
+        String t = s.trim().toLowerCase();
+        t = java.text.Normalizer.normalize(t, java.text.Normalizer.Form.NFD);
+        t = t.replaceAll("\\p{M}", "");
+        return t.replaceAll("\\s+", " ");
+    }
+
+    // NORMALIZACIÓN DE SATISFACCIÓN SEGÚN REGLA
+    public String normalizarSatisfaccionFormacion(String s) {
+        String t = normalizarTextoBasico(s);
+        if (t == null || t.isEmpty() || t.equals("-") || t.equals("n/a")) return null;
+        if (t.contains("totalmente") && t.contains("desacuerdo")) {
+            return "Totalmente en desacuerdo";
+        }
+        if (t.contains("totalmente") && t.contains("acuerdo")) {
+            return "Totalmente de acuerdo";
+        }
+        if (t.contains("desacuerdo")) {
+            return "En desacuerdo";
+        }
+        if (t.contains("acuerdo") || t.contains("satisfecho")) {
+            return "De acuerdo";
+        }
+        return null;
+    }
+
+    // NORMALIZACIÓN DE ÁREAS SEGÚN REGLA
+    public String normalizarAreaInteresPosgrado(String s) {
+        String t = normalizarTextoBasico(s);
+        if (t == null || t.isEmpty() || t.equals("-") || t.equals("n/a")) return null;
+        if (t.equals("ia") || t.contains("inteligencia artificial")) {
+            return "IA";
+        }
+        if (t.contains("software")) {
+            return "Ingeniería de Software";
+        }
+        if (t.contains("red") || t.contains("seguridad")) {
+            return "Redes y Seguridad";
+        }
+        if (t.contains("base") || t.contains("dato")) {
+            return "Base de Datos";
+        }
+        if (t.contains("robotica")) {
+            return "Robótica";
+        }
+        return null;
+    }
+
+    // MATRIZ CRUZADA NORMALIZADA: SATISFACCIÓN VS ÁREA DE INTERÉS (n = 123)
+    public Map<String, Map<String, Long>> calcularMatrizSatisfaccionVsArea(List<RespuestaTitulado> datos) {
+        Map<String, Map<String, Long>> matriz = new LinkedHashMap<>();
+        for (RespuestaTitulado r : datos) {
+            String sat = normalizarSatisfaccionFormacion(r.getSatisfaccionFormacion());
+            String area = normalizarAreaInteresPosgrado(r.getAreaInteresPosgrado());
+            if (sat != null && area != null) {
+                matriz.computeIfAbsent(sat, k -> new LinkedHashMap<>())
+                      .merge(area, 1L, Long::sum);
+            }
+        }
+        return matriz;
+    }
+
     // CÁLCULO DE MEDIA, MEDIANA Y DESVIACIÓN ESTÁNDAR PARA UNA SERIE DE DATOS
     public MetricaEstadistica calcularMetrica(String nombreVariable, List<Double> valores) {
         if (valores == null || valores.isEmpty()) {

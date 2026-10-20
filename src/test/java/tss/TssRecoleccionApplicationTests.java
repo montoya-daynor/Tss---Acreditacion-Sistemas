@@ -117,4 +117,58 @@ class TssRecoleccionApplicationTests {
 		assertEquals("Más de 3", freqRotacion.get(3).get("categoria"));
 	}
 
+	@Test
+	void testMapaCalorSatisfaccionVsArea() {
+		List<RespuestaTitulado> datos = tituladoService.listarTodos();
+		Map<String, Map<String, Long>> matriz = reporteService.calcularMatrizSatisfaccionVsArea(datos);
+
+		System.out.println("=== MATRIZ CALCULADA ===");
+		long total = 0;
+		long maxVal = 0;
+		for (Map.Entry<String, Map<String, Long>> e : matriz.entrySet()) {
+			System.out.println(e.getKey() + ": " + e.getValue());
+			for (long v : e.getValue().values()) {
+				total += v;
+				if (v > maxVal) maxVal = v;
+			}
+		}
+		System.out.println("TOTAL CELDAS: " + total + ", MAX VALOR: " + maxVal);
+
+		// Verificaciones según resultados esperados del usuario:
+		// Totalmente de acuerdo: IA 5, Robótica 1, Ing. de Software 2, Base de Datos 0, Redes y Seguridad 1
+		Map<String, Long> mTotAcuerdo = matriz.getOrDefault("Totalmente de acuerdo", Map.of());
+		assertEquals(5L, mTotAcuerdo.getOrDefault("IA", 0L));
+		assertEquals(1L, mTotAcuerdo.getOrDefault("Robótica", 0L));
+		assertEquals(2L, mTotAcuerdo.getOrDefault("Ingeniería de Software", 0L));
+		assertEquals(0L, mTotAcuerdo.getOrDefault("Base de Datos", 0L));
+		assertEquals(1L, mTotAcuerdo.getOrDefault("Redes y Seguridad", 0L));
+
+		// De acuerdo: IA 37, Robótica 2, Ing. de Software 23, Base de Datos 7, Redes y Seguridad 15
+		Map<String, Long> mAcuerdo = matriz.getOrDefault("De acuerdo", Map.of());
+		assertEquals(37L, mAcuerdo.getOrDefault("IA", 0L));
+		assertEquals(2L, mAcuerdo.getOrDefault("Robótica", 0L));
+		assertEquals(23L, mAcuerdo.getOrDefault("Ingeniería de Software", 0L));
+		assertEquals(7L, mAcuerdo.getOrDefault("Base de Datos", 0L));
+		assertEquals(15L, mAcuerdo.getOrDefault("Redes y Seguridad", 0L));
+
+		// En desacuerdo: IA 10, Robótica 2, Ing. de Software 3, Base de Datos 2, Redes y Seguridad 9
+		Map<String, Long> mDesacuerdo = matriz.getOrDefault("En desacuerdo", Map.of());
+		assertEquals(10L, mDesacuerdo.getOrDefault("IA", 0L));
+		assertEquals(2L, mDesacuerdo.getOrDefault("Robótica", 0L));
+		assertEquals(3L, mDesacuerdo.getOrDefault("Ingeniería de Software", 0L));
+		assertEquals(2L, mDesacuerdo.getOrDefault("Base de Datos", 0L));
+		assertEquals(9L, mDesacuerdo.getOrDefault("Redes y Seguridad", 0L));
+
+		// Totalmente en desacuerdo: IA 2, Robótica 0, Ing. de Software 1, Base de Datos 1, Redes y Seguridad 0
+		Map<String, Long> mTotDesacuerdo = matriz.getOrDefault("Totalmente en desacuerdo", Map.of());
+		assertEquals(2L, mTotDesacuerdo.getOrDefault("IA", 0L));
+		assertEquals(0L, mTotDesacuerdo.getOrDefault("Robótica", 0L));
+		assertEquals(1L, mTotDesacuerdo.getOrDefault("Ingeniería de Software", 0L));
+		assertEquals(1L, mTotDesacuerdo.getOrDefault("Base de Datos", 0L));
+		assertEquals(0L, mTotDesacuerdo.getOrDefault("Redes y Seguridad", 0L));
+
+		assertEquals(123L, total, "Total de celdas debe ser exactamente 123");
+		assertEquals(37L, maxVal, "El valor máximo real debe ser 37");
+	}
+
 }
