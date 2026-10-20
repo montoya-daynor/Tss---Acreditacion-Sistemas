@@ -32,6 +32,14 @@ public class RespuestaTitulado {
     @Column(name = "correo_registro", length = 255)
     private String correoRegistro;
 
+    // Col 4: Nombre
+    @Column(name = "nombre", length = 255)
+    private String nombre;
+
+    // Col 7: Hora de publicación de la calificación
+    @Column(name = "hora_publicacion")
+    private LocalDateTime horaPublicacion;
+
     // Col 4: Rango de edad
     @Column(name = "rango_edad", length = 20)
     private String rangoEdad;
@@ -269,6 +277,12 @@ public class RespuestaTitulado {
 
     public String getCorreoRegistro() { return correoRegistro; }
     public void setCorreoRegistro(String v) { this.correoRegistro = v; }
+
+    public String getNombre() { return nombre; }
+    public void setNombre(String v) { this.nombre = v; }
+
+    public LocalDateTime getHoraPublicacion() { return horaPublicacion; }
+    public void setHoraPublicacion(LocalDateTime v) { this.horaPublicacion = v; }
 
     public String getRangoEdad() { return rangoEdad; }
     public void setRangoEdad(String v) { this.rangoEdad = v; }

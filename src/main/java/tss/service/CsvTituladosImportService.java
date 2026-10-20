@@ -8,6 +8,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
@@ -24,7 +25,7 @@ public class CsvTituladosImportService {
     private final JdbcTemplate jdbcTemplate;
     private final RespuestaTituladoService tituladoService;
 
-    private static final DateTimeFormatter[] DATE_FORMATTERS = new DateTimeFormatter[] {
+    private static final DateTimeFormatter[] DATE_FORMATTERS = {
             DateTimeFormatter.ofPattern("d/M/yyyy H:m:s"),
             DateTimeFormatter.ofPattern("d/M/yyyy H:m"),
             DateTimeFormatter.ofPattern("d-M-yyyy H:m:s"),
@@ -63,33 +64,38 @@ public class CsvTituladosImportService {
         List<String> advertencias = new ArrayList<>();
         List<Object[]> batchArgs = new ArrayList<>();
 
-        try (InputStreamReader isr = new InputStreamReader(inputStream, StandardCharsets.UTF_8)) {
-            CSVParser parser = new CSVParserBuilder().withSeparator(';').build();
-            try (CSVReader csvReader = new CSVReaderBuilder(isr).withCSVParser(parser).build()) {
+        try {
+            byte[] bytes = inputStream.readAllBytes();
+            String contenido = new String(bytes, StandardCharsets.UTF_8);
+            if (contenido.startsWith("\uFEFF")) contenido = contenido.substring(1);
+
+            String primeraLinea = contenido.split("\n")[0];
+            long comas = primeraLinea.chars().filter(c -> c == ',').count();
+            long puntoYComas = primeraLinea.chars().filter(c -> c == ';').count();
+            char separador = comas > puntoYComas ? ',' : ';';
+
+            CSVParser parser = new CSVParserBuilder().withSeparator(separador).build();
+            try (CSVReader csvReader = new CSVReaderBuilder(
+                    new InputStreamReader(new ByteArrayInputStream(contenido.getBytes(StandardCharsets.UTF_8)), StandardCharsets.UTF_8))
+                    .withCSVParser(parser).build()) {
+
                 String[] header = csvReader.readNext();
                 if (header == null) {
                     return new ImportResult(false, 0, "El archivo CSV está vacío.", advertencias);
                 }
 
-                // Limpiar BOM en la primera columna si existe
-                if (header.length > 0 && header[0] != null && header[0].startsWith("\uFEFF")) {
-                    header[0] = header[0].substring(1);
-                }
-
                 if (header.length != 55) {
                     return new ImportResult(false, 0,
-                            "El archivo no tiene las 55 columnas requeridas (se encontraron " + header.length + "). Verifique que el separador sea punto y coma (;).",
+                            "El archivo no tiene las 55 columnas requeridas (se encontraron " + header.length + "). Separador detectado: '" + separador + "'.",
                             advertencias);
                 }
 
                 String[] fila;
-                int filaNum = 1; // 1 = encabezado
+                int filaNum = 1;
 
                 while ((fila = csvReader.readNext()) != null) {
                     filaNum++;
-                    if (fila.length == 0 || (fila.length == 1 && fila[0].trim().isEmpty())) {
-                        continue; // Fila vacía al final
-                    }
+                    if (fila.length == 0 || (fila.length == 1 && fila[0].trim().isEmpty())) continue;
 
                     if (fila.length != 55) {
                         return new ImportResult(false, 0,
@@ -97,119 +103,96 @@ public class CsvTituladosImportService {
                                 advertencias);
                     }
 
-                    // 0. Id
                     Long id = parseLong(fila[0]);
                     if (id == null) {
                         return new ImportResult(false, 0,
-                                "Error en la fila " + filaNum + ": El campo ID no puede ser nulo o vacío.",
-                                advertencias);
+                                "Error en la fila " + filaNum + ": El campo ID no puede ser nulo o vacío.", advertencias);
                     }
 
-                    // 1. Hora inicio, 2. Hora fin
                     LocalDateTime horaInicio = parseFecha(fila[1]);
-                    LocalDateTime horaFin = parseFecha(fila[2]);
-
-                    // 3 a 6
-                    String correoRegistro = cleanString(fila[3]);
-                    String rangoEdad = cleanString(fila[4]);
-                    String genero = cleanString(fila[5]);
-                    String tieneFormacion = cleanString(fila[6]);
+                    LocalDateTime horaFin    = parseFecha(fila[2]);
+                    String correoRegistro    = cleanString(fila[3]);
+                    String rangoEdad         = cleanString(fila[4]);
+                    String genero            = cleanString(fila[5]);
+                    String tieneFormacion    = cleanString(fila[6]);
 
                     if (rangoEdad == null || genero == null) {
                         return new ImportResult(false, 0,
-                                "Error en la fila " + filaNum + ": Rango de edad y Género son obligatorios.",
-                                advertencias);
+                                "Error en la fila " + filaNum + ": Rango de edad y Género son obligatorios.", advertencias);
                     }
 
-                    // 7 a 10: Posgrado cursado
-                    String nivelCursado = cleanString(fila[7]);
-                    String instCursada = cleanString(fila[8]);
-                    String financiamientoProg = cleanString(fila[9]);
-                    String nombreProg = cleanString(fila[10]);
-
-                    // 11 a 14: Interés posgrado
-                    String interesPosgrado = cleanString(fila[11]);
-                    String areaInteresPosgrado = cleanString(fila[12]);
-                    String instPreferida = cleanString(fila[13]);
-                    String opinionPosgrado = cleanString(fila[14]);
+                    String nivelCursado          = cleanString(fila[7]);
+                    String instCursada           = cleanString(fila[8]);
+                    String financiamientoProg    = cleanString(fila[9]);
+                    String nombreProg            = cleanString(fila[10]);
+                    String interesPosgrado       = cleanString(fila[11]);
+                    String areaInteresPosgrado   = cleanString(fila[12]);
+                    String instPreferida         = cleanString(fila[13]);
+                    String opinionPosgrado       = cleanString(fila[14]);
 
                     if (interesPosgrado == null) {
                         return new ImportResult(false, 0,
-                                "Error en la fila " + filaNum + ": Interés en posgrado no puede estar vacío.",
-                                advertencias);
+                                "Error en la fila " + filaNum + ": Interés en posgrado no puede estar vacío.", advertencias);
                     }
 
-                    // 15 y 16: Decimales
-                    Double aniosVidaProf = parseDecimal(fila[15]);
-                    Double aniosDesemp = parseDecimal(fila[16]);
+                    Double aniosVidaProf         = parseDecimal(fila[15]);
+                    Double aniosDesemp           = parseDecimal(fila[16]);
+                    String situacionLaboral      = cleanString(fila[17]);
 
-                    // 17 a 30: Laboral
-                    String situacionLaboral = cleanString(fila[17]);
                     if (situacionLaboral == null) {
                         return new ImportResult(false, 0,
-                                "Error en la fila " + filaNum + ": Situación laboral no puede estar vacía.",
-                                advertencias);
+                                "Error en la fila " + filaNum + ": Situación laboral no puede estar vacía.", advertencias);
                     }
 
-                    String empresa = cleanString(fila[18]);
-                    String rubro = cleanString(fila[19]);
-                    String rubroOtro = cleanString(fila[20]);
-                    String sector = cleanString(fila[21]);
-                    String depto = cleanString(fila[22]);
-                    String areaOrg = cleanString(fila[23]);
-                    String areaOtra = cleanString(fila[24]);
-                    String cargo = cleanString(fila[25]);
-                    String cargoOtro = cleanString(fila[26]);
-                    String pertinenciaLabores = cleanString(fila[27]);
-                    String antiguedadActual = cleanString(fila[28]);
-                    String medioObtencion = cleanString(fila[29]);
-                    String rangoRemuneracion = cleanString(fila[30]);
-
-                    // 31 a 35: Emprendimiento
-                    String origenEmprendimiento = cleanString(fila[31]);
-                    String tipoEntregable = cleanString(fila[32]);
+                    String empresa               = cleanString(fila[18]);
+                    String rubro                 = cleanString(fila[19]);
+                    String rubroOtro             = cleanString(fila[20]);
+                    String sector                = cleanString(fila[21]);
+                    String depto                 = cleanString(fila[22]);
+                    String areaOrg               = cleanString(fila[23]);
+                    String areaOtra              = cleanString(fila[24]);
+                    String cargo                 = cleanString(fila[25]);
+                    String cargoOtro             = cleanString(fila[26]);
+                    String pertinenciaLabores    = cleanString(fila[27]);
+                    String antiguedadActual      = cleanString(fila[28]);
+                    String medioObtencion        = cleanString(fila[29]);
+                    String rangoRemuneracion     = cleanString(fila[30]);
+                    String origenEmprendimiento  = cleanString(fila[31]);
+                    String tipoEntregable        = cleanString(fila[32]);
                     String financiamientoNegocio = cleanString(fila[33]);
-                    String satisfaccionNegocio = cleanString(fila[34]);
-                    String importanciaFormacionNegocio = cleanString(fila[35]);
-
-                    // 36 a 40: Trayectoria
-                    String esPrimerEmpleo = cleanString(fila[36]);
-                    String razonNoTrabaja = cleanString(fila[37]);
-                    String trabajoPrevio = cleanString(fila[38]);
-                    String tiempoPrimerEmpleo = cleanString(fila[39]);
-                    String cantidadEmpleos = cleanString(fila[40]);
-
-                    // 41 a 48: Satisfacción y Asignaturas
+                    String satisfaccionNegocio   = cleanString(fila[34]);
+                    String importanciaFormacion  = cleanString(fila[35]);
+                    String esPrimerEmpleo        = cleanString(fila[36]);
+                    String razonNoTrabaja        = cleanString(fila[37]);
+                    String trabajoPrevio         = cleanString(fila[38]);
+                    String tiempoPrimerEmpleo    = cleanString(fila[39]);
+                    String cantidadEmpleos       = cleanString(fila[40]);
                     String satisfaccionFormacion = cleanString(fila[41]);
                     String concordanciaFormacion = cleanString(fila[42]);
-                    String aspectosUtiles = cleanString(fila[43]);
-                    String aspectosMejorar = cleanString(fila[44]);
-                    String asignaturasVentaja = cleanString(fila[45]);
-                    String asignaturaVentajaOtra = cleanString(fila[46]);
-                    String asignaturasPocoUtiles = cleanString(fila[47]);
-                    String asignaturaPocoUtilOtra = cleanString(fila[48]);
+                    String aspectosUtiles        = cleanString(fila[43]);
+                    String aspectosMejorar       = cleanString(fila[44]);
+                    String asignaturasVentaja    = cleanString(fila[45]);
+                    String asigVentajaOtra       = cleanString(fila[46]);
+                    String asignaturasPocoUtil   = cleanString(fila[47]);
+                    String asigPocoUtilOtra      = cleanString(fila[48]);
+                    String interesRedContactos   = cleanString(fila[49]);
+                    String emailContacto         = cleanString(fila[50]);
+                    String telefonoContacto      = cleanString(fila[51]);
+                    String linkedin              = cleanString(fila[52]);
+                    Integer mesesVidaProf        = parseEntero(fila[53]);
+                    Integer mesesDesemp          = parseEntero(fila[54]);
 
-                    // 49 a 52: Contacto
-                    String interesRedContactos = cleanString(fila[49]);
-                    String emailContacto = cleanString(fila[50]);
-                    String telefonoContacto = cleanString(fila[51]);
-                    String linkedin = cleanString(fila[52]);
-
-                    // 53 y 54: Meses enteros
-                    Integer mesesVidaProf = parseEntero(fila[53]);
-                    Integer mesesDesemp = parseEntero(fila[54]);
-
-                    batchArgs.add(new Object[] {
+                    batchArgs.add(new Object[]{
                             id, horaInicio, horaFin, correoRegistro, rangoEdad, genero,
                             tieneFormacion, nivelCursado, instCursada, financiamientoProg, nombreProg,
                             interesPosgrado, areaInteresPosgrado, instPreferida, opinionPosgrado,
                             aniosVidaProf, aniosDesemp, situacionLaboral, empresa, rubro, rubroOtro,
                             sector, depto, areaOrg, areaOtra, cargo, cargoOtro, pertinenciaLabores,
                             antiguedadActual, medioObtencion, rangoRemuneracion, origenEmprendimiento,
-                            tipoEntregable, financiamientoNegocio, satisfaccionNegocio, importanciaFormacionNegocio,
+                            tipoEntregable, financiamientoNegocio, satisfaccionNegocio, importanciaFormacion,
                             esPrimerEmpleo, razonNoTrabaja, trabajoPrevio, tiempoPrimerEmpleo, cantidadEmpleos,
                             satisfaccionFormacion, concordanciaFormacion, aspectosUtiles, aspectosMejorar,
-                            asignaturasVentaja, asignaturaVentajaOtra, asignaturasPocoUtiles, asignaturaPocoUtilOtra,
+                            asignaturasVentaja, asigVentajaOtra, asignaturasPocoUtil, asigPocoUtilOtra,
                             interesRedContactos, emailContacto, telefonoContacto, linkedin,
                             mesesVidaProf, mesesDesemp
                     });
@@ -220,7 +203,6 @@ public class CsvTituladosImportService {
                 return new ImportResult(false, 0, "No se encontraron filas de datos para importar.", advertencias);
             }
 
-            // Limpiar la tabla previa para garantizar los 148 registros exactos del conjunto
             jdbcTemplate.execute("DELETE FROM respuesta_titulado;");
 
             String insertSql = """
@@ -238,32 +220,16 @@ public class CsvTituladosImportService {
                     interes_red_contactos, email_contacto, telefono_contacto, linkedin,
                     meses_vida_profesional, meses_desempleo
                 ) VALUES (
-                    ?, ?, ?, ?, ?, ?,
-                    ?, ?, ?, ?, ?,
-                    ?, ?, ?, ?,
-                    ?, ?, ?, ?, ?, ?,
-                    ?, ?, ?, ?, ?, ?, ?,
-                    ?, ?, ?, ?,
-                    ?, ?, ?, ?,
-                    ?, ?, ?, ?, ?,
-                    ?, ?, ?, ?,
-                    ?, ?, ?, ?,
-                    ?, ?, ?, ?,
-                    ?, ?
+                    ?,?,?,?,?,?, ?,?,?,?,?, ?,?,?,?, ?,?,?,?,?,?, ?,?,?,?,?,?,?, ?,?,?, ?,?,?,?,?, ?,?,?,?,?, ?,?,?,?, ?,?,?,?, ?,?,?,?, ?,?
                 )
             """;
 
             jdbcTemplate.batchUpdate(insertSql, batchArgs);
-
-            // Ajustar secuencia de id al valor máximo
             jdbcTemplate.execute("SELECT setval(pg_get_serial_sequence('respuesta_titulado', 'id'), COALESCE(max(id), 1)) FROM respuesta_titulado;");
 
-            if (tituladoService != null) {
-                tituladoService.invalidarCache();
-            }
+            if (tituladoService != null) tituladoService.invalidarCache();
 
-            return new ImportResult(true, batchArgs.size(),
-                    "¡" + batchArgs.size() + " registros cargados exitosamente!", advertencias);
+            return new ImportResult(true, batchArgs.size(), "¡" + batchArgs.size() + " registros cargados exitosamente!", advertencias);
 
         } catch (Exception e) {
             return new ImportResult(false, 0, "Error al procesar el archivo CSV: " + e.getMessage(), advertencias);
@@ -274,48 +240,33 @@ public class CsvTituladosImportService {
         if (valor == null || valor.trim().isEmpty()) return null;
         String clean = valor.trim();
         for (DateTimeFormatter fmt : DATE_FORMATTERS) {
-            try {
-                return LocalDateTime.parse(clean, fmt);
-            } catch (DateTimeParseException ignored) {}
+            try { return LocalDateTime.parse(clean, fmt); } catch (DateTimeParseException ignored) {}
         }
         try {
-            LocalDate d = LocalDate.parse(clean, DateTimeFormatter.ofPattern("d/M/yyyy"));
-            return d.atStartOfDay();
+            return LocalDate.parse(clean, DateTimeFormatter.ofPattern("d/M/yyyy")).atStartOfDay();
         } catch (Exception ignored) {}
         return null;
     }
 
     private Double parseDecimal(String valor) {
         if (valor == null || valor.trim().isEmpty()) return null;
-        String clean = valor.trim().replace(",", ".");
-        try {
-            return Double.parseDouble(clean);
-        } catch (NumberFormatException e) {
-            return null;
-        }
+        try { return Double.parseDouble(valor.trim().replace(",", ".")); }
+        catch (NumberFormatException e) { return null; }
     }
 
     private Integer parseEntero(String valor) {
         if (valor == null || valor.trim().isEmpty()) return null;
-        String clean = valor.trim();
-        try {
-            return Integer.parseInt(clean);
-        } catch (NumberFormatException e) {
-            try {
-                return (int) Math.round(Double.parseDouble(clean.replace(",", ".")));
-            } catch (Exception ex) {
-                return null;
-            }
+        try { return Integer.parseInt(valor.trim()); }
+        catch (NumberFormatException e) {
+            try { return (int) Math.round(Double.parseDouble(valor.trim().replace(",", "."))); }
+            catch (Exception ex) { return null; }
         }
     }
 
     private Long parseLong(String valor) {
         if (valor == null || valor.trim().isEmpty()) return null;
-        try {
-            return Long.parseLong(valor.trim());
-        } catch (NumberFormatException e) {
-            return null;
-        }
+        try { return Long.parseLong(valor.trim()); }
+        catch (NumberFormatException e) { return null; }
     }
 
     private String cleanString(String valor) {
